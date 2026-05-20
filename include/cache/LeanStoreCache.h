@@ -211,6 +211,7 @@ public:
 // --- Mini/Full Page management 
 
     // TODO: add lock later for concurrency
+    // set pos_state to 3 & push slot pointer to local_page_set free list
     void insert_local_set(uint64_t addr) {
         auto node = reinterpret_cast<NodeBase *>(addr);
         // assert(node->isLocked()); 
@@ -218,6 +219,7 @@ public:
         local_page_set.push_back(reinterpret_cast<void *>(addr));
     }
 
+    // pop last slot of local_page_set, return null if empty
     void *get_local_page_set() {
         if (local_page_set.empty()) 
             return nullptr;
@@ -226,7 +228,8 @@ public:
         return ret;
     }
 
-    // Strategy to get the empty page from buffer pool
+    // produce a free slot : if in warm up -> cache alloc
+    // otherwise, try to get from local page. If fail -> evict from cooling table 
     void *try_get_empty_page() {
         void *page = nullptr;
         while (true) {
@@ -268,6 +271,7 @@ public:
         return page;
     }
 
+    // loop try_get_empty_page till produce a slot
     void *get_empty_page() {
         void *page = nullptr;
         while (true) {
@@ -339,6 +343,7 @@ public:
         }
     }
 
+// --- Not use for now (start) ---
     // It relies on the pointer swizzling information
     NodeBase *cache_get(GlobalAddress node, NodeBase *parent, unsigned child_idx,
                         bool &restart, bool &refresh, bool IO_enable) {
@@ -448,64 +453,64 @@ public:
         auto idx = distribution(*generator);
         uint64_t admission_idx = 10000 * admission_rate_;
         if (state == 1 && idx >= admission_idx) {
-        // Just read from remote and return to the application
-        int ret = 1;
-        switch (rpc_type) {
-        case RPC_type::LOOKUP: {
-            auto buffer_page = raw_remote_read(global_node);
-            auto cur_leaf = reinterpret_cast<BTreeLeaf<Key, Value> *>(buffer_page);
-            if (!cur_leaf->rangeValid(k)) 
-                ret = -1;
-            else 
-                success = cur_leaf->find(k, result);
-            break;
-        }
+            // Just read from remote and return to the application
+            int ret = 1;
+            switch (rpc_type) {
+            case RPC_type::LOOKUP: {
+                auto buffer_page = raw_remote_read(global_node);
+                auto cur_leaf = reinterpret_cast<BTreeLeaf<Key, Value> *>(buffer_page);
+                if (!cur_leaf->rangeValid(k)) 
+                    ret = -1;
+                else 
+                    success = cur_leaf->find(k, result);
+                break;
+            }
 
-        case RPC_type::UPDATE: {
-            auto buffer_page = raw_remote_read(global_node);
-            auto cur_leaf = reinterpret_cast<BTreeLeaf<Key, Value> *>(buffer_page);
-            if (!cur_leaf->rangeValid(k)) 
-                ret = -1;
-            else {
-                success = cur_leaf->update(k, result);
-                if (success)
+            case RPC_type::UPDATE: {
+                auto buffer_page = raw_remote_read(global_node);
+                auto cur_leaf = reinterpret_cast<BTreeLeaf<Key, Value> *>(buffer_page);
+                if (!cur_leaf->rangeValid(k)) 
+                    ret = -1;
+                else {
+                    success = cur_leaf->update(k, result);
+                    if (success)
+                        remote_write(global_node, buffer_page, true, true);
+                }
+                break;
+            }
+
+            case RPC_type::INSERT: {
+                auto buffer_page = raw_remote_read(global_node);
+                auto cur_leaf = reinterpret_cast<BTreeLeaf<Key, Value> *>(buffer_page);
+                if ((!cur_leaf->rangeValid(k)) || (cur_leaf->count == cur_leaf->max_entries)) 
+                    ret = -1;
+                else {
+                    success = cur_leaf->insert(k, result);
                     remote_write(global_node, buffer_page, true, true);
+                }
+                break;
             }
-            break;
-        }
 
-        case RPC_type::INSERT: {
-            auto buffer_page = raw_remote_read(global_node);
-            auto cur_leaf = reinterpret_cast<BTreeLeaf<Key, Value> *>(buffer_page);
-            if ((!cur_leaf->rangeValid(k)) || (cur_leaf->count == cur_leaf->max_entries)) 
+            case RPC_type::DELETE: {
+                auto buffer_page = raw_remote_read(global_node);
+                auto cur_leaf = reinterpret_cast<BTreeLeaf<Key, Value> *>(buffer_page);
+                if (!cur_leaf->rangeValid(k)) 
+                    ret = -1;
+                else {
+                    success = cur_leaf->remove(k);
+                    if (success)
+                        remote_write(global_node, buffer_page, true, true);
+                }
+                break;
+            }
+
+            default:
                 ret = -1;
-            else {
-                success = cur_leaf->insert(k, result);
-                remote_write(global_node, buffer_page, true, true);
+                break;
             }
-            break;
-        }
-
-        case RPC_type::DELETE: {
-            auto buffer_page = raw_remote_read(global_node);
-            auto cur_leaf = reinterpret_cast<BTreeLeaf<Key, Value> *>(buffer_page);
-            if (!cur_leaf->rangeValid(k)) 
-                ret = -1;
-            else {
-                success = cur_leaf->remove(k);
-                if (success)
-                    remote_write(global_node, buffer_page, true, true);
-            }
-            break;
-        }
-
-        default:
-            ret = -1;
-            break;
-        }
-        bool flag = page_table_->remove_with_lock(global_node, reinterpret_cast<void *>(IO_FLAG));
-        assert(flag == true);
-        return ret;
+            bool flag = page_table_->remove_with_lock(global_node, reinterpret_cast<void *>(IO_FLAG));
+            assert(flag == true);
+            return ret;
         }
 
         return cold_to_hot(global_node, ret_page, parent, child_idx, refresh);
@@ -625,6 +630,8 @@ public:
         return false;
     }
 
+// --- Not use for now (end) ---
+   
     // TODO: add lock later
     void replace_child(BTreeInner<Key> *parent, NodeBase *cur_node, NodeBase *new_node) {
         int idx_in_parent = -1;

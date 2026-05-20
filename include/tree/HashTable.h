@@ -242,8 +242,7 @@ public:
         // cur_bucket->lock_.release_lock();
         return true;
     }
-
-    // Not use here    
+    
     // TODO: add lock later
     // find (key, val) in the bucket & remove it, caller change slot back to hot
     bool try_promote_using_value(uint64_t key, void *page) {
@@ -266,9 +265,12 @@ public:
         return true;
     }
 
+    // not use now 
+    // check if (key, page_ptr) pair currently in the cool tier
+    // if yes -> return true, otherwise -> return false
     bool check_existence(uint64_t key, void *page_ptr) {
         auto hash_val = hash(&key, sizeof(key));
-        auto bucket_idx = hash_val % bucket_num_;
+        auto bucket_idx = hash_val % bucket_num_; // which bucket the key maps to
         auto FP = (hash_val >> 49) | (1ULL << 15);
 
         Bucket *cur_bucket = table_ + bucket_idx;

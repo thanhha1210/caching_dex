@@ -124,7 +124,7 @@ inline void update_all_parent_ptr(NodeBase *mem_node) {
 }
 
 // walk the swizzled portion of the tree starting at mem_node, picking a child at each level randomly. 
-// returns the deepest swizzled descendant whose pos_state is still HOT (2) 
+// returns the deepest swizzled descendant whose pos_state is Hot (2) 
 // if can't find -> return nullptr
 inline NodeBase *recursive_iterate_without_bitmap(NodeBase *mem_node, int &idx_in_parent) {
     while (mem_node->type == PageType::BTreeInner) {
@@ -160,7 +160,6 @@ inline NodeBase *recursive_iterate_without_bitmap(NodeBase *mem_node, int &idx_i
     }
     return mem_node;
 }
-
 
 // same as recursive_iterate_without_bitmap but uses the bitmap to find
 // swizzled children. Lock/version checks dropped.

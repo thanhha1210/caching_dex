@@ -2,13 +2,12 @@
 
 /* B+tree driver for caching_dex
  *
- * This doesn't apply DEX Leanstore tree :
+ * This doesn't apply DEX Leanstore tree:
  *   - OptLock acquire/release (single threaded)
- *   - inter-node migration
  *   - RPC pushdown
  *   - Shared/private state
  *
- * Storage layer :Backend -> change to DSM later
+ * Storage layer: Backend -> change to DSM later
  * Cache layer: CacheManager (LeanStore-style buffer pool with pointer swizzling)
  */
 
@@ -60,10 +59,7 @@ public:
         delete super_root_;
     }
 
-    /*--------------------------------------------------------------*/
-    /* Backend allocation helpers (mirror dex's allocate_leaf_node) */
-    /*--------------------------------------------------------------*/
-
+    // --- Backend Alloc Helper ---
     GlobalAddress allocate_leaf(K min_lim = std::numeric_limits<K>::min(),
                                 K max_lim = std::numeric_limits<K>::max()) {
         auto addr = backend_->alloc(PAGE_SIZE);
@@ -89,10 +85,7 @@ public:
         return addr;
     }
 
-    /*--------------------------------------------------------------*/
-    /* Cache                                                        */
-    /*--------------------------------------------------------------*/
-
+    // --- Cache ---    
     // go from parent->children[child_idx]: 
     // if already swizzled -> return the cached pointer; 
     // otherwise -> load from backend, admit into cache, update parent's bitmap + the slot's swizzle tag.
@@ -101,7 +94,7 @@ public:
         if (child_slot.val & SWIZZLE_TAG) 
             return reinterpret_cast<NodeBase *>(child_slot.val & SWIZZLE_HIDE);
       
-        // Pin parent so sample_page won't choose & recycle its slot during cache_insert below.
+        // pin parent so sample_page won't choose & recycle its slot during cache_insert below.
         uint8_t prev_state = 0;
         bool pin = (parent && parent != super_root_);
         if (pin) { 
@@ -109,8 +102,8 @@ public:
             parent->pos_state = 4; 
         }
 
-        // load from Backend (raw_remote_read uses global_backend_)
-        NodeBase *buf = raw_remote_read(child_slot);
+        // not in cache -> load from backend (raw_remote_read uses global_backend_)
+        NodeBase *buf = raw_remote_read(child_slot); 
         if (buf->type == PageType::BTreeLeaf) 
             ++cache.leaf_miss_;
         else 
@@ -136,11 +129,8 @@ public:
         return static_cast<BTreeInner<K> *>(node)->isFull();
     }
 
-    /*--------------------------------------------------------------*/
-    /* Split helpers                                                */
-    /*--------------------------------------------------------------*/
-
-    // split `child` (which lives at parent->children[idx], currently swizzled and in cache). 
+    // --- Split Helper ---
+    // split child (which lives at parent->children[idx], currently swizzled and in cache). 
     // if parent is super_root_, a new real root is created via make_new_root.
     void split_child(BTreeInner<K> *parent, unsigned idx, NodeBase *child) {
         const bool parent_is_super = (parent == super_root_);
@@ -247,10 +237,7 @@ public:
         height_ = level + 1;
     }
 
-    /*--------------------------------------------------------------*/
-    /* tree_api<K, V>                                               */
-    /*--------------------------------------------------------------*/
-
+    // --- Tree_API ---
     bool insert(K k, V v) override {
         NodeBase *cur = load_child(super_root_->children[0], super_root_, 0);
         if (is_full(cur)) { // full -> split root first
