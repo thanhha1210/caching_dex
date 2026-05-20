@@ -161,18 +161,6 @@ inline NodeBase *recursive_iterate_without_bitmap(NodeBase *mem_node, int &idx_i
     return mem_node;
 }
 
-// find the index of the set bit in 'bitmap' closest to 'pos'. Only positions
-// in [0, count] are valid children slots, returns -1 if bitmap is empty.
-inline int closest_set_bit(uint64_t bitmap, int pos, int count) {
-    if (bitmap == 0) return -1;
-    for (int d = 0; d <= 64; ++d) {
-        int lo = pos - d;
-        int hi = pos + d;
-        if (lo >= 0 && lo <= count && (bitmap & (1ULL << lo))) return lo;
-        if (d != 0 && hi <= count && (bitmap & (1ULL << hi))) return hi;
-    }
-    return -1;
-}
 
 // same as recursive_iterate_without_bitmap but uses the bitmap to find
 // swizzled children. Lock/version checks dropped.
@@ -184,7 +172,7 @@ inline NodeBase *recursive_iterate(NodeBase *mem_node, int &idx_in_parent) {
         uint64_t hash_k = murmur64(reinterpret_cast<uint64_t>(mem_node));
         int idx = hash_k % (inner->count + 1); 
 
-        int next_idx = inner->closest_set(idx); // closest_set_bit(inner->bitmap, idx, inner->count);
+        int next_idx = inner->closest_set(idx); 
         if (next_idx == -1) 
             return nullptr;
         idx_in_parent = next_idx;

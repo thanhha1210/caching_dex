@@ -18,6 +18,8 @@ add_compile_options(
     -Wno-sign-compare
 )
 
+add_compile_options(-mbmi -mlzcnt)
+
 include_directories(
     ${PROJECT_SOURCE_DIR}
     ${PROJECT_SOURCE_DIR}/include
