@@ -12,13 +12,13 @@
 namespace cachepush {
     struct NodeBase {
         GlobalAddress remote_address;   
-        uint64_t bitmap;      // 32B
+        uint64_t bitmap;      
         NodeBase *parent_ptr; // ptr to parent
         PageType type;        // can remove later since check level -> know Type
         uint8_t count;
         uint8_t level;        // 0 = leaf, 1 = inner node on top of leaf
         uint8_t pos_state;    // 0 = remote, 1 = cool, 2 = hot, 3 = local working set, 4 = pinned (can't sample)
-        bool shared;
+        bool shared;          // not use now 
         bool dirty;
         bool obsolete;
         Key min_limit_;
@@ -42,21 +42,21 @@ namespace cachepush {
 
         KeyValueType data[max_entries];
         GlobalAddress next_leaf = GlobalAddress::Null();
-        uint64_t dummy[2]; // pack for 1-24 granularity
+        uint64_t dummy[2]; // pack for 1-24 granularity ... huh?
 
         BTreeLeaf(GlobalAddress remote) {
             remote_address = remote;
-            parent_ptr     = nullptr;
-            level          = 0;
-            count          = 0;
-            pos_state      = 0;
-            dirty          = true;
-            obsolete       = false;
-            shared         = false;
-            type           = type_marker;
-            bitmap         = 0;
-            min_limit_     = std::numeric_limits<Key>::min();
-            max_limit_     = std::numeric_limits<Key>::max();
+            parent_ptr = nullptr;
+            level = 0;
+            count = 0;
+            pos_state = 0;
+            dirty = true;
+            obsolete = false;
+            shared = false;
+            type = type_marker;
+            bitmap = 0;
+            min_limit_ = std::numeric_limits<Key>::min();
+            max_limit_ = std::numeric_limits<Key>::max();
         }
 
         bool isFull() const { return count == max_entries; }
@@ -178,21 +178,21 @@ namespace cachepush {
 
         GlobalAddress children[max_entries];
         Key keys[max_entries];
-        uint64_t dummy;
+        uint64_t dummy; // huh?
 
         BTreeInner(uint8_t level_in, GlobalAddress remote) {
             remote_address = remote;
-            parent_ptr     = nullptr;
-            level          = level_in;
-            count          = 0;
-            pos_state      = 0;
-            dirty          = true;
-            obsolete       = false;
-            shared         = false;
-            type           = type_marker;
-            bitmap         = 0;
-            min_limit_     = std::numeric_limits<Key>::min();
-            max_limit_     = std::numeric_limits<Key>::max();
+            parent_ptr = nullptr;
+            level = level_in;
+            count = 0;
+            pos_state = 0;
+            dirty = true;
+            obsolete = false;
+            shared = false;
+            type = type_marker;
+            bitmap = 0;
+            min_limit_ = std::numeric_limits<Key>::min();
+            max_limit_ = std::numeric_limits<Key>::max();
         }
 
         bool isFull() const { return count == (max_entries - 1); }
@@ -251,7 +251,7 @@ namespace cachepush {
             keys[pos] = k;
             children[pos] = child;
             std::swap(children[pos], children[pos + 1]);
-            const uint64_t upper_part = ((bitmap >> (pos + 1)) << (pos + 2));
+            const uint64_t upper_part = ((bitmap >> (pos + 1)) << (pos + 2)); // for?
             bitmap = (bitmap & ((1ULL << (pos + 1)) - 1)) | upper_part;
             if (child.val & SWIZZLE_TAG) 
                 set_bitmap(pos + 1);
@@ -261,7 +261,7 @@ namespace cachepush {
         }
     };
 
-    // function to init leaf_node
+    // init leaf node
     template <class Key, class Value>
     inline void initLeaf(BTreeLeaf<Key, Value>* leaf, GlobalAddress remote) {
         std::memset(reinterpret_cast<void *>(leaf), 0, PAGE_SIZE);
@@ -280,7 +280,7 @@ namespace cachepush {
         leaf->next_leaf      = GlobalAddress::Null();
     }
 
-    // function to init inner_node
+    // init inner node
     template <class Key>
     inline void initInner(BTreeInner<Key> *inner, GlobalAddress remote, std::uint8_t level) {
         std::memset(reinterpret_cast<void *>(inner), 0, PAGE_SIZE);

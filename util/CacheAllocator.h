@@ -22,7 +22,7 @@
 
 namespace cachepush {
 // Plain anonymous mmap. The dex original used MAP_HUGETLB + numa_*
-// (requires root / libhugetlbfs / libnuma). For  single-threaded local-memory,
+// (requires root / libhugetlbfs / libnuma). For single-threaded local-memory,
 // just use simple mmap
 inline void *hugePageAlloc(size_t size) {
     void *res = mmap(nullptr, size, PROT_READ | PROT_WRITE,
@@ -125,7 +125,7 @@ public:
         return ret;
     }
 
-    // Randomly select a page
+    // randomly select a page
     static void *random_select() {
         static thread_local std::mt19937 *generator = nullptr;
         if (!generator) {

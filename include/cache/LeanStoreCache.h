@@ -78,7 +78,7 @@ public:
         assert(backend != nullptr);
         global_backend_ = backend;
 
-        rpc_rate_ = std::max<double>(0, std::min<double>(rpc_rate, 0.99));
+        rpc_rate_ = std::max<double>(0, std::min<double>(rpc_rate, 0.99)); // no need RPC rate here, just keep as old
         std::cout << "Pushdown (RPC) Rate: " << rpc_rate_ << std::endl;
         std::cout << "Admission Rate: " << admission_rate_ << std::endl;
         state = 0;
@@ -91,7 +91,8 @@ public:
         hash_table_ = new HashTable(cache_capacity * cooling_ratio, page_table_);
     }
 
-    double get_rpc_ratio() { return 0; }    // TODO: fix this
+    // No need these 3 for now
+    double get_rpc_ratio() { return 0; }    
     void set_rpc_ratio(double ratio) { rpc_rate_ = ratio; }
     void set_admission_ratio(double ratio) { admission_rate_ = ratio; }
 
@@ -229,7 +230,7 @@ public:
     void *try_get_empty_page() {
         void *page = nullptr;
         while (true) {
-            if (state == 1) {   // in cool state
+            if (state == 1) {   // dynamic -> pool is full, recycle
                 if (!local_page_set.empty()) {
                     page = get_local_page_set();
                     break;
@@ -245,7 +246,7 @@ public:
                     break;
                 }
             } 
-            else { // state == 0
+            else { // state == 0 -> warm up - pool has free slot
                 bool last_page_flag = false;
                 page = CacheAllocator::allocate(last_page_flag);
                 // If this is the last page -> inc the state of the buffer pool
@@ -312,7 +313,8 @@ public:
         return true;
     }
 
-    // To test whether the loaded node belongs to this computing node
+    // Not use for now
+    // To test whether the loaded node belongs to this computing node 
     bool sync_or_not(BTreeInner<Key> *inner, uint64_t idx) {
         if (inner->level == 255)
             return true;
@@ -323,6 +325,7 @@ public:
         return true;
     }
 
+    // Not use now
     void opportunistic_sample() {
         if (state == 1 && local_page_set.empty()) { // start sample (hot -> cold)
             sample_multiple_pages(num_pages_to_sample);

@@ -144,8 +144,7 @@ int main(int argc, char **argv) {
     uint64_t insert_cursor = k.key_space + 1;
 
     tree.clear_statistic();
-    // Snapshot cache miss counters around the mixed phase so we can report
-    // how often the walk had to cold-load from Backend.
+    // cache miss counters in the mixed phase 
     const uint64_t leaf_miss_before  = tree.cache.leaf_miss_;
     const uint64_t inner_miss_before = tree.cache.inner_miss_;
 
@@ -200,7 +199,7 @@ int main(int argc, char **argv) {
     std::cout << "  ranges="  << cnt_range
               << " (avg scanned " << (cnt_range ? scanned_total / cnt_range : 0)
               << ")\n";
-    const uint64_t leaf_misses  = tree.cache.leaf_miss_  - leaf_miss_before;
+    const uint64_t leaf_misses = tree.cache.leaf_miss_ - leaf_miss_before;
     const uint64_t inner_misses = tree.cache.inner_miss_ - inner_miss_before;
     const uint64_t total_misses = leaf_misses + inner_misses;
     std::cout << "  cache:  leaf_miss=" << leaf_misses

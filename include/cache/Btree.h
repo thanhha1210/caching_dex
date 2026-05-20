@@ -63,8 +63,8 @@ int update(GlobalAddress &root, uint64_t dsm_base, Key k, Value v_result) {
     return 2;
 }
 
-// -1 means insert failure because enterring wrong leaf node (-1 also means it
-// needs to SMO), 0 means failure because not enter into a leaf node, 1 means
+// -1 means insert failure because enterring wrong leaf node, 
+// 0 means failure because not enter into a leaf node, 1 means
 // insert value succeeds, 2 means update a existing value;
 int insert(GlobalAddress &root, uint64_t dsm_base, Key k, Value v_result) {
     auto node_id = root.nodeID;

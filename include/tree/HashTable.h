@@ -138,7 +138,7 @@ public:
     }
 
     // TODO: add lock later, remote_write
-    // call when sample_page demotes a hot page
+    // used by leanstore_cache.sample_page demotes a hot page
     // if not full -> place new entries at 0, shift other by 1
     // if full -> return oldest entry via evict_page
     void insert(uint64_t key, void *value, void **evict_page) {
@@ -221,7 +221,7 @@ public:
   }
 */
     
-    // TODO: add lock later
+    // Not use here. TODO: add lock later
     bool try_promote(uint64_t key, void **page_ptr) {
         auto hash_val = hash(&key, sizeof(key));
         auto bucket_idx = hash_val % bucket_num_;
@@ -289,6 +289,7 @@ public:
         // cur_bucket->lock_.release_lock();
     }
 
+    // used by leanstorecache.try_get_empty_page() need a free slot
     // -1 means find nothing, 0 means find an evict page in this page
     int random_evict_to_remote(void **page_ptr, int probing_length) {
         auto idx = random_bucket_idx();
