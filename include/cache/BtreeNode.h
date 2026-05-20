@@ -221,6 +221,36 @@ namespace cachepush {
         void unset_bitmap(int idx) { bitmap &= ~(1ULL << idx); }
         bool test_bitmap(int idx) const { return (bitmap & (1ULL << idx)) != 0; }
 
+        int closest_set(int pos) const {
+            if (bitmap == 0)
+                return -1;
+
+            int bit_pos = std::min(pos, 63);
+            uint64_t bitmap_data = bitmap;
+            int closest_right_gap_distance = 64;
+            int closest_left_gap_distance = 64;
+            // Logically sets to the right of pos, in the bitmap these are sets to the
+            // left of pos's bit
+            // This covers the case where pos is a 1 cover idx: [pos, 63]
+            uint64_t bitmap_right_sets = bitmap_data & (~((1ULL << bit_pos) - 1));
+            if (bitmap_right_sets != 0) {
+                closest_right_gap_distance = static_cast<int>(_tzcnt_u64(bitmap_right_sets)) - bit_pos;
+            }
+            // Logically sets to the left of pos, in the bitmap these are sets to the
+            // right of pos's bit cover idx: [0, pos - 1]
+            uint64_t bitmap_left_sets = bitmap_data & ((1ULL << bit_pos) - 1);
+            if (bitmap_left_sets != 0) {
+                closest_left_gap_distance = bit_pos - (63 - static_cast<int>(_lzcnt_u64(bitmap_left_sets)));
+            }
+            
+            if (closest_right_gap_distance < closest_left_gap_distance && pos + closest_right_gap_distance < (count + 1)) {
+                return pos + closest_right_gap_distance;
+            } 
+            else {
+                return pos - closest_left_gap_distance;
+            }
+        }
+
         void split(Key &sep, BTreeInner *newInner) {
             newInner->count = count - (count / 2);
             count = count - newInner->count - 1;

@@ -102,7 +102,7 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    print_Args(k);
+    //print_Args(k);
 
     // Backend big enough to hold the worst case
     const uint64_t backend_pages = std::max<uint64_t>(64ULL * 1024, k.key_space / 8 + 1024);
@@ -192,21 +192,18 @@ int main(int argc, char **argv) {
     std::cout << "----\n";
     std::cout << "mixed workload: " << k.op_num << " ops in " << secs
               << "s -> " << (k.op_num / secs / 1e6) << " Mops/s\n";
-    std::cout << "  reads="   << cnt_read   << " (hit " << hit_read   << ")\n";
-    std::cout << "  updates=" << cnt_update << " (hit " << hit_update << ")\n";
-    std::cout << "  inserts=" << cnt_insert << "\n";
-    std::cout << "  deletes=" << cnt_delete << " (hit " << hit_delete << ")\n";
-    std::cout << "  ranges="  << cnt_range
-              << " (avg scanned " << (cnt_range ? scanned_total / cnt_range : 0)
-              << ")\n";
+    std::cout << "reads=" << cnt_read   <<"\n"; // << " (hit " << hit_read   << ")\n";
+    std::cout << "updates=" << cnt_update <<"\n"; // << " (hit " << hit_update << ")\n";
+    std::cout << "inserts=" << cnt_insert <<"\n"; // << "\n";
+    std::cout << "deletes=" << cnt_delete <<"\n"; // << " (hit " << hit_delete << ")\n";
+    std::cout << "ranges=" << cnt_range  <<"\n"; // << " (avg scanned " << (cnt_range ? scanned_total / cnt_range : 0) << ")\n";
+
     const uint64_t leaf_misses = tree.cache.leaf_miss_ - leaf_miss_before;
     const uint64_t inner_misses = tree.cache.inner_miss_ - inner_miss_before;
     const uint64_t total_misses = leaf_misses + inner_misses;
-    std::cout << "  cache:  leaf_miss=" << leaf_misses
-              << " inner_miss=" << inner_misses
-              << " total=" << total_misses
-              << " misses/op=" << (k.op_num ? (double)total_misses / k.op_num : 0.0)
-              << "\n";
+    std::cout << "----\n";
+    std::cout << "cache:  leaf_miss=" << leaf_misses << " inner_miss=" << inner_misses
+              << " total=" << total_misses << " misses/op=" << (k.op_num ? (double)total_misses / k.op_num : 0.0) << "\n";
     std::cout << "----\n";
     tree.get_statistic();
     

@@ -184,7 +184,7 @@ inline NodeBase *recursive_iterate(NodeBase *mem_node, int &idx_in_parent) {
         uint64_t hash_k = murmur64(reinterpret_cast<uint64_t>(mem_node));
         int idx = hash_k % (inner->count + 1); 
 
-        int next_idx = closest_set_bit(inner->bitmap, idx, inner->count);
+        int next_idx = inner->closest_set(idx); // closest_set_bit(inner->bitmap, idx, inner->count);
         if (next_idx == -1) 
             return nullptr;
         idx_in_parent = next_idx;

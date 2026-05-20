@@ -58,7 +58,7 @@ public:
     HashTable *hash_table_;
 
     // NOT Concurrent page table - (capacity entry) hash table  
-    // Map every backend address currently in any slot(hot. cold) to that slot pointer
+    // Map backend address currently in any slot(hot/ cold) to slot pointer
     PageTable *page_table_;  
 
     // Limit information
@@ -357,35 +357,13 @@ public:
         // 1.0 Cold => Hot
         // cache miss
         if (target_page == nullptr) {
-            
-            page_table_->insert_io_flag(head_page_bucket, node); // Add IO flag
+            page_table_->insert_io_flag(head_page_bucket, node); // TODO: Add IO flag
             // head_page_bucket->lock_.release_lock();
             if (!IO_enable)
                 return nullptr;
             restart = true;
             NodeBase *return_page = nullptr;
             cold_to_hot(node, reinterpret_cast<void **>(&return_page), parent, child_idx, refresh);
-            /* // Not sure why comment this?
-                bool sync_read =
-                    sync_or_not(reinterpret_cast<BTreeInner<Key> *>(parent),
-                    child_idx);
-                NodeBase *return_page = nullptr;
-                auto ret =
-                    simple_cold_to_hot(node, reinterpret_cast<void **>(&return_page),
-                                    parent, child_idx, refresh, sync_read);
-                // Remove IO flag
-                if (ret == 0) {
-                void *old_flag = nullptr;
-                auto flag = page_table_->update_with_lock(
-                    node, reinterpret_cast<void *>(return_page), &old_flag);
-                assert(flag == true);
-                assert(reinterpret_cast<uint64_t>(old_flag) == IO_FLAG);
-                } else {
-                auto flag = page_table_->remove_with_lock(
-                    node, reinterpret_cast<void *>(IO_FLAG));
-                assert(flag == true);
-                }
-            */
             return return_page;
         } 
         
